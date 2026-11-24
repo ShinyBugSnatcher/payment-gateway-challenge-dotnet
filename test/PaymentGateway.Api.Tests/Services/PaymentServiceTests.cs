@@ -12,6 +12,8 @@ using PaymentGateway.Api.Services;
 
 using Xunit;
 
+using static PaymentGateway.Api.Validation.PaymentRequestValidationHelper;
+
 namespace PaymentGateway.Api.UnitTests.Services;
 
 public class PaymentServiceTests
@@ -70,16 +72,53 @@ public class PaymentServiceTests
         request.Amount = -100;
 
         // Act
-        // TODO: Update once rejected payment handling is implemented.
-        await Assert.ThrowsAsync<NotImplementedException>(
-            () => _paymentService.ProcessPaymentAsync(request));
+        var exception = await Assert
+            .ThrowsAsync<PaymentValidationException>(
+                () => _paymentService.ProcessPaymentAsync(request));
 
         // Assert
+        Assert.Contains(
+            "Amount must be greater than zero.",
+            exception.Errors);
+
         _bankClientMock.Verify(
             client => client.ProcessPaymentAsync(
                 It.IsAny<BankPaymentRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task ReturnsAllValidationErrorsWhenPaymentIsInvalid()
+    {
+        // Arrange
+        var request = CreateValidPaymentRequest();
+
+        request.Amount = -100;
+        request.CardNumber = "123";
+        request.Cvv = "1";
+
+        // Act
+        var exception = await Assert
+            .ThrowsAsync<PaymentValidationException>(
+                () => _paymentService.ProcessPaymentAsync(request));
+
+        // Assert
+        Assert.Contains(
+            "Amount must be greater than zero.",
+            exception.Errors);
+
+        Assert.Contains(
+            "Invalid card number.",
+            exception.Errors);
+
+        Assert.Contains(
+            "Invalid CVV.",
+            exception.Errors);
+
+        Assert.Equal(3, exception.Errors.Count);
+
+        _bankClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]

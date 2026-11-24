@@ -12,3 +12,12 @@ public class PostPaymentResponse
     public string Currency { get; set; }
     public int Amount { get; set; }
 }
+
+public class RejectedPaymentResponse
+{
+    public PaymentStatus Status { get; init; }
+        = PaymentStatus.Rejected;
+
+    public IReadOnlyList<string> Errors { get; init; }
+        = Array.Empty<string>();
+}

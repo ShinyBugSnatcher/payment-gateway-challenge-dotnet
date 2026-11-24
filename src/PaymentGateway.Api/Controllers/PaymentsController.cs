@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using PaymentGateway.Api.Models.Responses;
+using PaymentGateway.Api.Models.Enums;
 using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
+
+using static PaymentGateway.Api.Validation.PaymentRequestValidationHelper;
 
 
 namespace PaymentGateway.Api.Controllers;
@@ -28,11 +31,26 @@ public class PaymentsController : Controller
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RejectedPaymentResponse),StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PostPaymentResponse>> PostPaymentAsync(
-        [FromBody] PostPaymentRequest request)
+    [FromBody] PostPaymentRequest request,
+    CancellationToken cancellationToken)
     {
-        var payment = await _paymentService.ProcessPaymentAsync(request);
+        try
+        {
+            var payment = await _paymentService.ProcessPaymentAsync(
+                request,
+                cancellationToken);
 
-        return Ok(payment);
+            return Ok(payment);
+        }
+        catch (PaymentValidationException exception)
+        {
+            return BadRequest(new RejectedPaymentResponse
+            {
+                Errors = exception.Errors
+            });
+        }
     }
 }

@@ -1,10 +1,11 @@
-﻿using PaymentGateway.Api.Clients;
-using PaymentGateway.Api.Clients.Interfaces;
+﻿using PaymentGateway.Api.Clients.Interfaces;
 using PaymentGateway.Api.Models.Bank;
 using PaymentGateway.Api.Models.Enums;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Validation;
+
+using static PaymentGateway.Api.Validation.PaymentRequestValidationHelper;
 
 namespace PaymentGateway.Api.Services;
 
@@ -32,8 +33,7 @@ public class PaymentService
 
         if (validationErrors.Count > 0)
         {
-            // TODO: Return rejected payment result
-            throw new NotImplementedException();
+            throw new PaymentValidationException(validationErrors);
         }
 
         // Map payment request to bank request
