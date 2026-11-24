@@ -65,7 +65,8 @@ public class PaymentService
             Amount = request.Amount
         };
 
-        // TODO: Persist processed payment
+        // Persist processed payment
+        _paymentsRepository.Add(paymentResponse);
 
         return paymentResponse;
     }
