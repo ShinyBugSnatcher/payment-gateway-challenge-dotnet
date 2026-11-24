@@ -7,7 +7,7 @@ namespace PaymentGateway.Api.UnitTests.PaymentRequestValidatorTests;
 
 public class PaymentRequestValidatorTests
 {
-    private readonly PaymentRequestValidator _validator = new();
+    private readonly PaymentRequestValidationHelper _validator = new();
 
     private static PostPaymentRequest CreateValidRequest()
     {

@@ -3,7 +3,7 @@ using PaymentGateway.Api.Models.Requests;
 
 namespace PaymentGateway.Api.Validation
 {
-    public class PaymentRequestValidator
+    public class PaymentRequestValidationHelper
     {
         public List<string> Validate(PostPaymentRequest request)
         {
