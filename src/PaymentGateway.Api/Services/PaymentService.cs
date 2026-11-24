@@ -9,7 +9,7 @@ namespace PaymentGateway.Api.Services
     public class PaymentService
     {
         private readonly PaymentsRepository _paymentsRepository;
-        private readonly PaymentRequestValidator _validator= new PaymentRequestValidator();
+        private readonly PaymentRequestValidationHelper _validator= new PaymentRequestValidationHelper();
         public PaymentService(PaymentsRepository paymentsRepository)
         {
             _paymentsRepository = paymentsRepository;
