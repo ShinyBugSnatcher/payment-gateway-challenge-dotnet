@@ -8,7 +8,7 @@ using PaymentGateway.Api.Controllers;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
 
-namespace PaymentGateway.Api.UnitTests.PaymentController;
+namespace PaymentGateway.Api.UnitTests;
 
 public class PaymentsControllerTests
 {
