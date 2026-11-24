@@ -1,4 +1,5 @@
 using PaymentGateway.Api.Services;
+using PaymentGateway.Api.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<PaymentsRepository>();
 builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<PaymentRequestValidator>();
 
 var app = builder.Build();
 

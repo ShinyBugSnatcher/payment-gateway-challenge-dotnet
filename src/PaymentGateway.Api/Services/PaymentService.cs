@@ -1,12 +1,15 @@
-﻿using PaymentGateway.Api.Models.Requests;
+﻿using System.ComponentModel.DataAnnotations;
+
+using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
+using PaymentGateway.Api.Validation;
 
 namespace PaymentGateway.Api.Services
 {
     public class PaymentService
     {
         private readonly PaymentsRepository _paymentsRepository;
-
+        private readonly PaymentRequestValidator _validator= new PaymentRequestValidator();
         public PaymentService(PaymentsRepository paymentsRepository)
         {
             _paymentsRepository = paymentsRepository;
@@ -15,7 +18,13 @@ namespace PaymentGateway.Api.Services
         public Task<PostPaymentResponse> ProcessPaymentAsync(
             PostPaymentRequest request)
         {
-            // TODO: Validate payment request
+            var validationErrors = _validator.Validate(request);
+
+            if (validationErrors.Count > 0)
+            {
+                // TODO: Return rejected payment result
+                throw new NotImplementedException();
+            }
 
             // TODO: Send payment to acquiring bank
 
