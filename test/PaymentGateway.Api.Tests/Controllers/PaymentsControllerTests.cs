@@ -10,7 +10,7 @@ using PaymentGateway.Api.Models.Enums;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
 
-namespace PaymentGateway.Api.UnitTests;
+namespace PaymentGateway.Api.UnitTests.Controllers;
 
 public class PaymentsControllerTests
 {
