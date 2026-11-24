@@ -1,4 +1,5 @@
 ﻿using PaymentGateway.Api.Clients.Interfaces;
+using PaymentGateway.Api.Exceptions;
 using PaymentGateway.Api.Models.Bank;
 using PaymentGateway.Api.Models.Enums;
 using PaymentGateway.Api.Models.Requests;

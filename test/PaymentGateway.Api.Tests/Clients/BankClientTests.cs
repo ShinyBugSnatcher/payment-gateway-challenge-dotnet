@@ -6,6 +6,7 @@ using Moq;
 using Moq.Protected;
 
 using PaymentGateway.Api.Clients;
+using PaymentGateway.Api.Exceptions;
 using PaymentGateway.Api.Models.Bank;
 
 namespace PaymentGateway.Api.UnitTests.Clients;
@@ -166,7 +167,7 @@ public class BankClientTests : IDisposable
     [InlineData(HttpStatusCode.ServiceUnavailable)]
     [InlineData(HttpStatusCode.InternalServerError)]
     public async Task ThrowsExceptionWhenBankReturnsError(
-        HttpStatusCode statusCode)
+    HttpStatusCode statusCode)
     {
         // Arrange
         var request = CreateValidBankRequest();
@@ -175,13 +176,16 @@ public class BankClientTests : IDisposable
 
         // Act
         var exception = await Assert
-            .ThrowsAsync<HttpRequestException>(
+            .ThrowsAsync<BankCommunicationException>(
                 () => _bankClient.ProcessPaymentAsync(request));
 
         // Assert
+        var innerException = Assert.IsType<HttpRequestException>(
+            exception.InnerException);
+
         Assert.Equal<HttpStatusCode?>(
             statusCode,
-            exception.StatusCode);
+            innerException.StatusCode);
     }
 
     [Fact]
@@ -193,7 +197,7 @@ public class BankClientTests : IDisposable
         SetupBankResponse(HttpStatusCode.OK, "null");
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<BankCommunicationException>(
             () => _bankClient.ProcessPaymentAsync(request));
     }
 
@@ -207,10 +211,88 @@ public class BankClientTests : IDisposable
             HttpStatusCode.OK,
             "Invalid JSON");
 
+        // Act
+        var exception = await Assert
+            .ThrowsAsync<BankCommunicationException>(
+                () => _bankClient.ProcessPaymentAsync(request));
+
+        // Assert
+        Assert.IsType<JsonException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ThrowsCommunicationExceptionWhenBankIsUnreachable()
+    {
+        // Arrange
+        var request = CreateValidBankRequest();
+
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException(
+                "Connection refused."));
+
         // Act & Assert
-        await Assert.ThrowsAsync<JsonException>(
+        await Assert.ThrowsAsync<BankCommunicationException>(
             () => _bankClient.ProcessPaymentAsync(request));
     }
+
+    [Fact]
+    public async Task ThrowsTimeoutExceptionWhenBankTimesOut()
+    {
+        // Arrange
+        var request = CreateValidBankRequest();
+
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new TaskCanceledException(
+                "Request timed out."));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BankTimeoutException>(
+            () => _bankClient.ProcessPaymentAsync(request));
+    }
+
+    [Fact]
+    public async Task PreservesCallerCancellation()
+    {
+        // Arrange
+        var request = CreateValidBankRequest();
+
+        using var cancellationTokenSource =
+            new CancellationTokenSource();
+
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Returns(async (
+                HttpRequestMessage message,
+                CancellationToken token) =>
+            {
+                cancellationTokenSource.Cancel();
+
+                await Task.Delay(
+                    Timeout.InfiniteTimeSpan,
+                    token);
+
+                return new HttpResponseMessage();
+            });
+
+        // Act & Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _bankClient.ProcessPaymentAsync(
+                request,
+                cancellationTokenSource.Token));
+    }
+
+    // Helper methods
 
     private void SetupBankResponse(
         HttpStatusCode statusCode,
@@ -249,6 +331,8 @@ public class BankClientTests : IDisposable
             Cvv = "123"
         };
     }
+
+    
 
     public void Dispose()
     {
