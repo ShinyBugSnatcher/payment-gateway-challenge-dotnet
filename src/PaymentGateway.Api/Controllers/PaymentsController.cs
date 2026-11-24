@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using PaymentGateway.Api.Models.Enums;
+using PaymentGateway.Api.Exceptions;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
-
-using static PaymentGateway.Api.Validation.PaymentRequestValidationHelper;
-
 
 namespace PaymentGateway.Api.Controllers;
 
@@ -38,8 +35,10 @@ public class PaymentsController : Controller
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PostPaymentResponse),StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(RejectedPaymentResponse),StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),StatusCodes.Status502BadGateway)]
+    [ProducesResponseType(typeof(ProblemDetails),StatusCodes.Status504GatewayTimeout)]
     public async Task<ActionResult<PostPaymentResponse>> PostPaymentAsync(
     [FromBody] PostPaymentRequest request,
     CancellationToken cancellationToken)
@@ -58,6 +57,18 @@ public class PaymentsController : Controller
             {
                 Errors = exception.Errors
             });
+        }
+        catch (BankCommunicationException)
+        {
+            return Problem(
+                title: "Acquiring bank communication failed.",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+        catch (BankTimeoutException)
+        {
+            return Problem(
+                title: "Acquiring bank request timed out.",
+                statusCode: StatusCodes.Status504GatewayTimeout);
         }
     }
 }
